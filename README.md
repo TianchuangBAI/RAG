@@ -38,17 +38,7 @@ unzip BLEURT-20.zip
 
 ## 使用流程
 
-### 1. 数据预处理
-
-运行数据处理脚本来加工原生input-output数据：
-
-```bash
-python dataprocess.py
-```
-
-处理后的数据将保存在 `processed_data` 目录下。
-
-### 2. 数据分割和处理
+### 1. 数据分割和处理
 
 针对训练数据进行分割和处理：
 
@@ -58,7 +48,7 @@ python data_en.py
 ```
 data.py代表对TCM训练数据进行处理，data_en.py代表对西医数据的处理。
 
-### 3. LoRA微调训练
+### 2. LoRA微调训练
 
 启动LoRA微调训练，checkpoint将保存在 `output/checkpoint` 目录下：
 
@@ -68,13 +58,13 @@ python train_lora_MM.py
 ```
 TCM代表启动中医模型微调，MM代表启动西医模型微调。
 
-### 4. 知识库准备
+### 3. 知识库准备
 
 将外部知识库文件放入 `knowledge_base` 目录中。
 knowledge_base_1为TCM知识库
 knowledge_base_2为西医知识库
 
-### 5. 配置API密钥
+### 4. 配置API密钥
 
 设置DashScope API密钥：
 
@@ -84,7 +74,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 **注意：** 请将 `your_api_key_here` 替换为您的实际API密钥。
 
-### 6. 运行RAG系统
+### 5. 运行RAG系统
 
 启动RAG问答系统：
 
