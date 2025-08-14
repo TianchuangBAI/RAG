@@ -54,15 +54,19 @@ python dataprocess.py
 
 ```bash
 python data.py
+python data_en.py
 ```
+data.py代表对TCM训练数据进行处理，data_en.py代表对西医数据的处理。
 
 ### 3. LoRA微调训练
 
 启动LoRA微调训练，checkpoint将保存在 `output/checkpoint` 目录下：
 
 ```bash
-python train_lora.py
+python train_lora_TCM.py
+python train_lora_MM.py
 ```
+TCM代表启动中医模型微调，MM代表启动西医模型微调。
 
 ### 4. 知识库准备
 
