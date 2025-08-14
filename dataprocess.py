@@ -5,7 +5,7 @@ from typing import List, Dict
 import time
 
 # 配置 DeepSeek API 密钥和端点
-DEEPSEEK_API_KEY = "sk-fefc9e312daa4c68a3d4d00b68fc2886"  # 替换为你的 DeepSeek API Key
+DEEPSEEK_API_KEY = ""  # 替换为你的 DeepSeek API Key
 DEEPSEEK_API_URL = "https://api.deepseek.com/v1/chat/completions"  # DeepSeek API 地址
 
 # 全局变量用于控制请求速率
