@@ -15,7 +15,7 @@ PROMPT = "你是一个医学专家，你需要根据用户的问题，给出带�
 MAX_LENGTH = 2048
 
 swanlab.config.update({
-    "model": "Qwen/Qwen3-0.6B",
+    "model": "Qwen/Qwen3-14B",
     "prompt": PROMPT,
     "data_max_length": MAX_LENGTH,
     })
@@ -91,11 +91,11 @@ def predict(messages, model, tokenizer):
     return response
 
 # 在modelscope上下载Qwen模型到本地目录下
-model_dir = snapshot_download("Qwen/Qwen3-0.6B", cache_dir="./", revision="master")
+model_dir = snapshot_download("Qwen/Qwen3-14B", cache_dir="./", revision="master")
 
 # Transformers加载模型权重
-tokenizer = AutoTokenizer.from_pretrained("./Qwen/Qwen3-0.6B", use_fast=False, trust_remote_code=True)
-model = AutoModelForCausalLM.from_pretrained("./Qwen/Qwen3-0.6B", device_map="auto", torch_dtype=torch.bfloat16)
+tokenizer = AutoTokenizer.from_pretrained("./Qwen/Qwen3-14B", use_fast=False, trust_remote_code=True)
+model = AutoModelForCausalLM.from_pretrained("./Qwen/Qwen3-14B", device_map="auto", torch_dtype=torch.bfloat16)
 model.enable_input_require_grads()  # 开启梯度检查点时，要执行该方法
 
 # 配置lora
@@ -133,7 +133,7 @@ eval_ds = Dataset.from_pandas(eval_df)
 eval_dataset = eval_ds.map(process_func, remove_columns=eval_ds.column_names)
 
 args = TrainingArguments(
-    output_dir="./output/Qwen3-0.6B",
+    output_dir="./output/Qwen3-14B",
     per_device_train_batch_size=4,
     per_device_eval_batch_size=1,
     gradient_accumulation_steps=1,
@@ -146,7 +146,7 @@ args = TrainingArguments(
     save_on_each_node=True,
     gradient_checkpointing=True,
     report_to="swanlab",
-    run_name="qwen3-0.6B",
+    run_name="qwen3-14B",
 )
 
 trainer = Trainer(
