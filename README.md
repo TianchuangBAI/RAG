@@ -83,12 +83,13 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 启动RAG问答系统：
 
 ```bash
-python main_lora.py
-python RAG.py
+python run_TCMlora_rag.py
+python run_baseline_rag.py
+python run_MMlora_rag.py
+
 ```
 
 输入查询后即可获得相应的输出结果。
-
 ## 结果评估
 
 ### 方法1：BLEURT评估
