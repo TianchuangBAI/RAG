@@ -7,7 +7,7 @@ def main():
     # 配置参数 - 直接使用您指定的路径
     PDF_FOLDER = "knowledge_base"  # PDF文件夹路径
     BASE_MODEL_PATH = "./Qwen/Qwen3-14B"  # 基础模型路径
-    LORA_CHECKPOINT_PATH = "checkpoint"   # LoRA checkpoint路径
+    LORA_CHECKPOINT_PATH = "output/checkpoint/checkpoint-800"   # LoRA checkpoint路径
     
     # 检查环境变量
     if not os.getenv("DASHSCOPE_API_KEY"):
