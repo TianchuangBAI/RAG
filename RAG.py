@@ -34,7 +34,7 @@ class RAGSystem:
         self.top_k = top_k
         self.rerank_top_k = rerank_top_k
         
-        # 固定使用Qwen2.5-0.5B模型和缓存目录
+        # 固定使用Qwen3-14B模型和缓存目录
         model_name = "Qwen/Qwen3-14B"
         model_cache_dir = "autodl-tmp/qwen"
         
