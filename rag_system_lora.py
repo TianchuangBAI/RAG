@@ -26,7 +26,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 class LoRARAGSystem:
     def __init__(self, 
-                 base_model_path="./Qwen/Qwen3-0.6B",
+                 base_model_path="./Qwen/Qwen3-14B",
                  lora_checkpoint_path="checkpoint",
                  chunk_size=500,
                  chunk_overlap=50,
