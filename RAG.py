@@ -35,7 +35,7 @@ class RAGSystem:
         self.rerank_top_k = rerank_top_k
         
         # 固定使用Qwen2.5-0.5B模型和缓存目录
-        model_name = "Qwen/Qwen2.5-0.5B"
+        model_name = "Qwen/Qwen3-14B"
         model_cache_dir = "autodl-tmp/qwen"
         
         # 创建模型缓存目录
@@ -388,7 +388,7 @@ def main():
         return
     
     print("RAG + LLM 系统配置:")
-    print("- 使用模型: Qwen2.5-0.5B")
+    print("- 使用模型: Qwen3-14B")
     print("- 模型缓存目录: autodl-tmp/qwen")
     print("- 文本块大小: 500字符")
     print("- 检索数量: 10个文档")
