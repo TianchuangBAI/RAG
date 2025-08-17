@@ -6,7 +6,7 @@ def process_test_TCM_json():
     """处理test_TCM.json文件，提取所有query字段里的文字内容并保存到query/query_TCM.txt"""
     
     # 文件路径
-    input_file = "test_TCM.json"
+    input_file = "test data/test_TCM.json"
     output_dir = "query"
     output_file = os.path.join(output_dir, "query_TCM.txt")
     
