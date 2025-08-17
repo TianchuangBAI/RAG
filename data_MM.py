@@ -3,6 +3,9 @@ import random
 from pathlib import Path
 import os
 
+from modelscope.msdatasets import MsDataset
+ds =  MsDataset.load('BRZ911/Medical_consultation_data_SFT')
+
 def load_json_or_jsonl_with_error_handling(file_path):
     """加载JSON或JSONL文件，自动识别格式并处理可能的格式错误"""
     data = []
