@@ -8,7 +8,7 @@ def process_test_TCM_json():
     # 文件路径
     input_file = "test data/test_TCM.json"
     output_dir = "query"
-    output_file = os.path.join(output_dir, "query_TCM.txt")
+    output_file = os.path.join(output_dir, "query/query_TCM.txt")
     
     print("🚀 开始处理test_TCM.json文件中的query字段...")
     print("="*50)
@@ -100,7 +100,7 @@ def process_output_TCM_json():
     
     # 文件路径
     input_file = "test data/test_TCM.json"
-    output_dir = "result_example/groundtruth_TCM"
+    output_dir = "result_example"
     output_file = os.path.join(output_dir, "groundtruth_TCM.txt")
     
     print("\n🚀 开始处理test_TCM.json文件中的output字段...")
