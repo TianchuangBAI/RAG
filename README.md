@@ -115,7 +115,7 @@ BERTScore使用BERT的上下文嵌入来计算文本相似度。
 
 **使用步骤：**
 
-1. 将需要对比的两个文本分别命名为 `file_1.txt` 和 `file_2.txt`
+1. 将需要对比的两个文本分别命名为 `groundtruth_TCM.txt` 和 `output_TCM.txt`
 2. 运行评估脚本：
 
 ```bash
