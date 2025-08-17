@@ -380,7 +380,7 @@ class RAGSystem:
 
 def main():
     # 配置参数
-    PDF_FOLDER = "knowledge_base"  # PDF文件夹路径
+    PDF_FOLDER = "knowledge_base_TCM"  # PDF文件夹路径,需修改此处代码更新结果
     
     # 检查环境变量
     if not os.getenv("DASHSCOPE_API_KEY"):
