@@ -79,7 +79,7 @@ def main():
     print("=" * 50)
     
     # 使用train_en.json文件作为输入
-    input_file = 'train_en.json'  # 训练数据文件
+    input_file = 'med-en/train.json'  # 训练数据文件
     print(f"使用训练数据文件: {input_file}")
     
     train_output = 'train_en.jsonl'
