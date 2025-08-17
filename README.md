@@ -99,8 +99,8 @@ BLEURT是一种基于BERT的评估指标，用于评估生成文本的质量。
 
 ```bash
 python -m bleurt.score_files \
-  -candidate_file=file_1.txt \
-  -reference_file=file_2.txt \
+  -candidate_file=result_example/file_1.txt \
+  -reference_file=result_example/file_2.txt \
   -bleurt_checkpoint=BLEURT-20
 ```
 
