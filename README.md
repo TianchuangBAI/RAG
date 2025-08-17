@@ -122,3 +122,10 @@ BERTScore使用BERT的上下文嵌入来计算文本相似度。
 ```bash
 python bertscore.py
 ```
+
+## 测试数据处理
+
+```bash
+python process_test_TCM.py
+```
+将test data中的TCM数据进行处理并提取query；若需要处理MM数据，需要将文件内的文件读取路径更换。
