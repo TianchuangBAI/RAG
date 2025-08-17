@@ -75,6 +75,14 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 **注意：** 请将 `your_api_key_here` 替换为您的实际API密钥。
 
+### 测试数据处理
+
+```bash
+python process_test_TCM.py
+python process_test_MM.py
+```
+将test data中的TCM/MM数据进行处理并提取query和output，分别保存在query文件和result_example/groundtruth中。
+
 ### 5. 运行RAG系统
 
 启动RAG问答系统：
@@ -123,9 +131,3 @@ BERTScore使用BERT的上下文嵌入来计算文本相似度。
 python bertscore.py
 ```
 
-## 测试数据处理
-
-```bash
-python process_test_TCM.py
-```
-将test data中的TCM数据进行处理并提取query；若需要处理MM数据，需要将文件内的文件读取路径更换。
