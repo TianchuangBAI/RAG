@@ -81,7 +81,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 python process_test_TCM.py
 python process_test_MM.py
 ```
-将test data中的TCM/MM数据进行处理并提取query和output，分别保存在query文件和result_example/groundtruth中。
+将test data中的TCM/MM数据进行处理并提取query和output，分别保存在query文件和result_example文件中。
 
 ### 6. 运行RAG系统
 
