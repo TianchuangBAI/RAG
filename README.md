@@ -43,10 +43,10 @@ unzip BLEURT-20.zip
 针对训练数据进行分割和处理：
 
 ```bash
-python data.py
-python data_en.py
+python data_TCM.py
+python data_MM.py
 ```
-data.py代表对TCM训练数据进行处理，data_en.py代表对西医数据的处理。
+data_TCM.py代表对TCM训练数据进行处理，data_MM.py代表对西医数据的处理。
 
 ### 2. LoRA微调训练
 
