@@ -5,7 +5,7 @@ from rag_system_lora import LoRARAGSystem
 def main():
     """主函数"""
     # 配置参数 - 直接使用您指定的路径
-    PDF_FOLDER = "knowledge_base2"  # PDF文件夹路径
+    PDF_FOLDER = "knowledge_base_MM"  # PDF文件夹路径
     BASE_MODEL_PATH = "./Qwen/Qwen3-14B"  # 基础模型路径
     LORA_CHECKPOINT_PATH = "./output/Qwen3-14B-en/checkpoint"   # LoRA checkpoint路径
     
