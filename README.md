@@ -119,5 +119,5 @@ BERTScore使用BERT的上下文嵌入来计算文本相似度。
 2. 运行评估脚本：
 
 ```bash
-python simple_compare.py
+python bertscore.py
 ```
