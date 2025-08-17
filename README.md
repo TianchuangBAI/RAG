@@ -61,8 +61,8 @@ TCM代表启动中医模型微调，MM代表启动西医模型微调。
 ### 3. 知识库准备
 
 将外部知识库文件放入 `knowledge_base` 目录中。
-knowledge_base为TCM知识库
-knowledge_base2为西医知识库
+knowledge_base_TCM为TCM知识库
+knowledge_base_MM为西医知识库
 
 ### 4. 配置API密钥
 
