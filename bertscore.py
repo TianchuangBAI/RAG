@@ -79,8 +79,8 @@ def main():
     print("=" * 40)
     
     # 这里可以修改为您的实际文件路径
-    file1 = "reslut_example\file_1.txt"  # 替换为您的第一个文件路径
-    file2 = "reslut_example\file_2.txt"  # 替换为您的第二个文件路径
+    file1 = "reslut_example/file_1.txt"  # 替换为您的第一个文件路径
+    file2 = "reslut_example/file_2.txt"  # 替换为您的第二个文件路径
     
     print(f"计算文件相似度:")
     print(f"文件1: {file1}")
@@ -113,3 +113,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
