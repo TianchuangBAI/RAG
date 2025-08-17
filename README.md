@@ -75,7 +75,7 @@ export DASHSCOPE_API_KEY="your_api_key_here"
 
 **注意：** 请将 `your_api_key_here` 替换为您的实际API密钥。
 
-### 测试数据处理
+### 5. 测试数据处理
 
 ```bash
 python process_test_TCM.py
@@ -83,7 +83,7 @@ python process_test_MM.py
 ```
 将test data中的TCM/MM数据进行处理并提取query和output，分别保存在query文件和result_example/groundtruth中。
 
-### 5. 运行RAG系统
+### 6. 运行RAG系统
 
 启动RAG问答系统：
 
@@ -95,6 +95,7 @@ python run_MMlora_rag.py
 ```
 
 三个不同的命令行分别代表着不同的模型，TCM代表微调后的中医模型，baseline代表qwen3-14b模型，MM代表微调后的西医模型。用户可以根据诉求选择对应的模型，并更新代码中的checkpoint地址，输入查询后即可获得相应的输出结果。
+用交互式的能力支持用户选择不同的操作路径，输入1则进入问答形式，输入2则进入批量数据处理模式。
 ## 结果评估
 
 ### 方法1：BLEURT评估
