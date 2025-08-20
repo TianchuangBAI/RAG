@@ -6,6 +6,7 @@ import faiss
 import pickle
 from pathlib import Path
 import re
+import torch
 
 # PDF处理
 import PyPDF2
@@ -99,234 +100,246 @@ class RAGSystem:
             print(f"读取PDF文件 {pdf_path} 时出错: {e}")
         return text
     
-    def split_text_into_chunks(self, text: str) -> List[str]:
-        """将文本分割成chunks"""
-        # 简单的文本分割策略
-        sentences = re.split(r'[。！？\n]', text)
+    def chunk_text(self, text: str) -> List[str]:
+        """将文本分割成块"""
         chunks = []
-        current_chunk = ""
+        start = 0
+        text_length = len(text)
         
-        for sentence in sentences:
-            sentence = sentence.strip()
-            if not sentence:
-                continue
-                
-            if len(current_chunk) + len(sentence) <= self.chunk_size:
-                current_chunk += sentence + "。"
-            else:
-                if current_chunk:
-                    chunks.append(current_chunk.strip())
-                current_chunk = sentence + "。"
-        
-        if current_chunk:
-            chunks.append(current_chunk.strip())
+        while start < text_length:
+            end = start + self.chunk_size
+            if end > text_length:
+                end = text_length
+            
+            chunk = text[start:end]
+            chunks.append(chunk)
+            
+            start = end - self.chunk_overlap
+            if start >= text_length:
+                break
         
         return chunks
     
-    def get_embeddings(self, texts: List[str]) -> np.ndarray:
-        """获取文本的embeddings"""
-        embeddings = []
-        batch_size = 10  # 批量处理以避免API限制
-        
-        for i in range(0, len(texts), batch_size):
-            batch_texts = texts[i:i+batch_size]
-            try:
-                response = self.embedding_client.embeddings.create(
-                    model=self.embedding_model,
-                    input=batch_texts,
-                    dimensions=1024,
-                    encoding_format="float"
-                )
-                
-                batch_embeddings = [data.embedding for data in response.data]
-                embeddings.extend(batch_embeddings)
-                print(f"已处理 {min(i+batch_size, len(texts))}/{len(texts)} 条文本的embedding")
-                
-            except Exception as e:
-                print(f"获取embedding时出错: {e}")
-                # 如果出错，添加零向量作为占位符
-                for _ in batch_texts:
-                    embeddings.append([0.0] * 1024)
-        
-        return np.array(embeddings)
+    def get_embedding(self, text: str) -> List[float]:
+        """获取文本的embedding"""
+        try:
+            response = self.embedding_client.embeddings.create(
+                model=self.embedding_model,
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"获取embedding失败: {e}")
+            return []
     
-    def build_knowledge_base(self, pdf_folder: str, save_path: str = "knowledge_base.pkl"):
+    def build_knowledge_base(self, pdf_folder: str):
         """构建知识库"""
-        print("正在构建知识库...")
+        print(f"正在构建知识库，PDF文件夹: {pdf_folder}")
         
-        # 检查是否已存在知识库文件
-        if os.path.exists(save_path):
-            print("发现已存在的知识库文件，正在加载...")
-            with open(save_path, 'rb') as f:
-                data = pickle.load(f)
-                self.chunks = data['chunks']
-                self.chunk_embeddings = data['embeddings']
-                self.index = data['index']
-            print("知识库加载完成")
+        # 检查PDF文件夹是否存在
+        if not os.path.exists(pdf_folder):
+            print(f"PDF文件夹不存在: {pdf_folder}")
             return
         
-        # 读取所有PDF文件
-        all_text = ""
-        pdf_files = list(Path(pdf_folder).glob("*.pdf"))
+        # 获取所有PDF文件
+        pdf_files = [f for f in os.listdir(pdf_folder) if f.endswith('.pdf')]
+        if not pdf_files:
+            print(f"在 {pdf_folder} 中未找到PDF文件")
+            return
         
+        print(f"找到 {len(pdf_files)} 个PDF文件")
+        
+        # 处理每个PDF文件
         for pdf_file in pdf_files:
+            pdf_path = os.path.join(pdf_folder, pdf_file)
             print(f"正在处理: {pdf_file}")
-            text = self.extract_text_from_pdf(str(pdf_file))
-            all_text += f"\n\n=== {pdf_file.name} ===\n\n" + text
+            
+            # 提取文本
+            text = self.extract_text_from_pdf(pdf_path)
+            if not text.strip():
+                print(f"  {pdf_file} 未提取到文本内容")
+                continue
+            
+            # 分割文本
+            file_chunks = self.chunk_text(text)
+            print(f"  分割成 {len(file_chunks)} 个文本块")
+            
+            # 获取embedding
+            for chunk in file_chunks:
+                embedding = self.get_embedding(chunk)
+                if embedding:
+                    self.chunks.append(chunk)
+                    self.chunk_embeddings.append(embedding)
         
-        # 分割文本
-        print("正在分割文本...")
-        self.chunks = self.split_text_into_chunks(all_text)
-        print(f"共生成 {len(self.chunks)} 个文本块")
+        if not self.chunks:
+            print("未成功提取任何文本块")
+            return
         
-        # 生成embeddings
-        print("正在生成embeddings...")
-        embeddings = self.get_embeddings(self.chunks)
-        self.chunk_embeddings = embeddings
+        print(f"总共提取了 {len(self.chunks)} 个文本块")
         
         # 构建FAISS索引
         print("正在构建FAISS索引...")
-        dimension = embeddings.shape[1]
-        self.index = faiss.IndexFlatIP(dimension)  # 使用内积相似度
+        embeddings_array = np.array(self.chunk_embeddings).astype('float32')
+        self.index = faiss.IndexFlatIP(embeddings_array.shape[1])
+        self.index.add(embeddings_array)
         
-        # 归一化embeddings以使用内积计算余弦相似度
-        normalized_embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        self.index.add(normalized_embeddings.astype(np.float32))
-        
-        # 保存知识库
-        print("正在保存知识库...")
-        with open(save_path, 'wb') as f:
-            pickle.dump({
-                'chunks': self.chunks,
-                'embeddings': self.chunk_embeddings,
-                'index': self.index
-            }, f)
-        
-        print("知识库构建完成")
+        print("知识库构建完成！")
     
-    def retrieve_relevant_docs(self, query: str) -> List[Dict[str, Any]]:
+    def retrieve_documents(self, query: str, top_k: int = None) -> List[Dict[str, Any]]:
         """检索相关文档"""
+        if not self.index or not self.chunks:
+            return []
+        
+        if top_k is None:
+            top_k = self.top_k
+        
         # 获取查询的embedding
-        query_embedding = self.get_embeddings([query])[0]
-        query_embedding = query_embedding / np.linalg.norm(query_embedding)
+        query_embedding = self.get_embedding(query)
+        if not query_embedding:
+            return []
         
-        # 检索
-        scores, indices = self.index.search(
-            query_embedding.reshape(1, -1).astype(np.float32), 
-            self.top_k
-        )
+        # 搜索相似文档
+        query_embedding_array = np.array([query_embedding]).astype('float32')
+        scores, indices = self.index.search(query_embedding_array, top_k)
         
-        # 整理检索结果
-        results = []
-        for score, idx in zip(scores[0], indices[0]):
-            if idx < len(self.chunks):  # 确保索引有效
-                results.append({
+        # 构建结果
+        retrieved_docs = []
+        for i, (score, idx) in enumerate(zip(scores[0], indices[0])):
+            if idx < len(self.chunks):
+                retrieved_docs.append({
                     'text': self.chunks[idx],
                     'score': float(score),
                     'index': int(idx)
                 })
         
-        return results
+        return retrieved_docs
     
-    def rerank_documents(self, query: str, documents: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def rerank_documents(self, query: str, documents: List[Dict[str, Any]], top_k: int = None) -> List[Dict[str, Any]]:
         """重排序文档"""
         if not documents:
-            return documents
+            return []
         
-        if self.reranker is not None:
+        if top_k is None:
+            top_k = self.rerank_top_k
+        
+        if self.reranker:
+            # 使用CrossEncoder重排序
             try:
-                # 使用CrossEncoder进行重排序
                 pairs = [(query, doc['text']) for doc in documents]
                 scores = self.reranker.predict(pairs)
                 
-                # 更新分数并排序
-                for i, score in enumerate(scores):
-                    documents[i]['rerank_score'] = float(score)
+                # 将分数添加到文档中
+                for doc, score in zip(documents, scores):
+                    doc['rerank_score'] = float(score)
                 
-                documents = sorted(documents, key=lambda x: x['rerank_score'], reverse=True)
+                # 按重排序分数排序
+                reranked_docs = sorted(documents, key=lambda x: x['rerank_score'], reverse=True)
+                return reranked_docs[:top_k]
             except Exception as e:
-                print(f"重排序失败，使用原始分数: {e}")
+                print(f"CrossEncoder重排序失败: {e}")
+                # 回退到余弦相似度
+                pass
         
-        # 返回top_k个结果
-        return documents[:self.rerank_top_k]
+        # 使用余弦相似度重排序
+        try:
+            # 获取查询的TF-IDF向量
+            query_tokens = list(jieba.cut(query))
+            query_text = ' '.join(query_tokens)
+            
+            # 获取文档的TF-IDF向量
+            doc_texts = [doc['text'] for doc in documents]
+            doc_tokens = [list(jieba.cut(doc)) for doc in doc_texts]
+            doc_texts_processed = [' '.join(tokens) for tokens in doc_tokens]
+            
+            # 计算TF-IDF
+            all_texts = [query_text] + doc_texts_processed
+            vectorizer = TfidfVectorizer()
+            tfidf_matrix = vectorizer.fit_transform(all_texts)
+            
+            # 计算余弦相似度
+            query_vector = tfidf_matrix[0:1]
+            doc_vectors = tfidf_matrix[1:]
+            similarities = cosine_similarity(query_vector, doc_vectors).flatten()
+            
+            # 将相似度分数添加到文档中
+            for doc, similarity in zip(documents, similarities):
+                doc['rerank_score'] = float(similarity)
+            
+            # 按相似度排序
+            reranked_docs = sorted(documents, key=lambda x: x['rerank_score'], reverse=True)
+            return reranked_docs[:top_k]
+            
+        except Exception as e:
+            print(f"TF-IDF重排序也失败: {e}")
+            # 返回原始排序的文档
+            return documents[:top_k]
     
     def generate_answer(self, query: str, context_docs: List[Dict[str, Any]]) -> Dict[str, Any]:
         """生成答案"""
-        # 构建上下文
-        context = "\n\n".join([f"参考文档{i+1}:\n{doc['text']}" for i, doc in enumerate(context_docs)])
-        
-        # 构建prompt
-        prompt = f"""基于以下参考文档回答问题，如果参考文档中没有相关信息，请说明无法从提供的文档中找到答案。
+        try:
+            # 构建上下文
+            context = "\n\n".join([doc['text'] for doc in context_docs])
+            
+            # 构建提示词
+            prompt = f"""基于以下上下文信息，回答用户的问题。请提供准确、详细的答案。
 
-参考文档:
+上下文信息：
 {context}
 
-问题: {query}
+用户问题：{query}
 
-请提供准确、详细的答案:"""
+请回答："""
 
-        try:
-            # 准备模型输入
-            messages = [{"role": "user", "content": prompt}]
-            text = self.tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=True,
-                enable_thinking=True
-            )
-            model_inputs = self.tokenizer([text], return_tensors="pt").to(self.model.device)
-            
             # 生成答案
-            generated_ids = self.model.generate(
-                **model_inputs,
-                max_new_tokens=512,  # 减少token数量，适合小模型
-                temperature=0.3,     # 降低温度，提高答案的确定性
-                do_sample=True,
-                top_p=0.9,          # 添加top_p采样
-                pad_token_id=self.tokenizer.eos_token_id
-            )
-            output_ids = generated_ids[0][len(model_inputs.input_ids[0]):].tolist()
+            inputs = self.tokenizer(prompt, return_tensors="pt")
             
-            # 解析thinking内容
-            try:
-                index = len(output_ids) - output_ids[::-1].index(151668)
-            except ValueError:
-                index = 0
+            with torch.no_grad():
+                outputs = self.model.generate(
+                    inputs.input_ids,
+                    max_new_tokens=512,
+                    temperature=0.7,
+                    do_sample=True,
+                    pad_token_id=self.tokenizer.eos_token_id
+                )
             
-            thinking_content = self.tokenizer.decode(output_ids[:index], skip_special_tokens=True).strip("\n")
-            content = self.tokenizer.decode(output_ids[index:], skip_special_tokens=True).strip("\n")
+            answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+            
+            # 提取生成的答案部分
+            answer = answer.replace(prompt, "").strip()
             
             return {
-                'answer': content,
-                'thinking': thinking_content,
-                'context_docs': context_docs,
+                'answer': answer,
+                'thinking': f"基于 {len(context_docs)} 个相关文档生成答案",
                 'success': True
             }
             
         except Exception as e:
-            print(f"生成答案时出错: {e}")
             return {
-                'answer': f"生成答案时出现错误: {e}",
+                'answer': f"生成答案时出错: {e}",
                 'thinking': "",
-                'context_docs': context_docs,
                 'success': False
             }
     
     def process_single_query(self, query: str) -> Dict[str, Any]:
         """处理单个查询"""
-        print(f"正在处理查询: {query}")
+        # 检索文档
+        retrieved_docs = self.retrieve_documents(query)
+        if not retrieved_docs:
+            return {
+                'answer': "未找到相关文档",
+                'thinking': "检索失败",
+                'success': False,
+                'retrieved_docs': [],
+                'reranked_docs': []
+            }
         
-        # 检索相关文档
-        retrieved_docs = self.retrieve_relevant_docs(query)
-        
-        # 重排序
+        # 重排序文档
         reranked_docs = self.rerank_documents(query, retrieved_docs)
         
         # 生成答案
         result = self.generate_answer(query, reranked_docs)
         
         return {
-            'query': query,
             'retrieved_docs': retrieved_docs,
             'reranked_docs': reranked_docs,
             'answer': result['answer'],
@@ -378,34 +391,8 @@ class RAGSystem:
         print(f"总共处理了 {len(results)} 个查询")
 
 
-def main():
-    # 配置参数
-    PDF_FOLDER = "knowledge_base_TCM"  # PDF文件夹路径,需修改此处代码更新结果
-    
-    # 检查环境变量
-    if not os.getenv("DASHSCOPE_API_KEY"):
-        print("请设置环境变量 DASHSCOPE_API_KEY")
-        return
-    
-    print("RAG + LLM 系统配置:")
-    print("- 使用模型: Qwen3-14B")
-    print("- 模型缓存目录: autodl-tmp/qwen")
-    print("- 文本块大小: 500字符")
-    print("- 检索数量: 10个文档")
-    print("- 重排序后保留: 3个文档")
-    print()
-    
-    # 初始化RAG系统
-    rag_system = RAGSystem(
-        chunk_size=500,
-        chunk_overlap=50,
-        top_k=10,
-        rerank_top_k=3
-    )
-    
-    # 构建知识库
-    rag_system.build_knowledge_base(PDF_FOLDER)
-    
+def interactive_mode(rag_system):
+    """交互式推理模式"""
     print("\n" + "="*60)
     print("RAG + LLM 交互式问答系统")
     print("="*60)
@@ -450,7 +437,7 @@ def main():
             print("-"*40)
             if result['reranked_docs']:
                 for i, doc in enumerate(result['reranked_docs']):
-                    print(f"文档 {i+1} (相似度: {doc.get('score', 0):.4f}):")
+                    print(f"文档 {i+1} (相似度: {doc.get('rerank_score', doc.get('score', 0)):.4f}):")
                     # 截取文档内容的前200个字符
                     doc_preview = doc['text'][:200] + "..." if len(doc['text']) > 200 else doc['text']
                     print(f"  {doc_preview}")
@@ -481,6 +468,92 @@ def main():
             print(f"\n❌ 处理过程中出现错误: {e}")
             print("请重试或联系技术支持")
 
+
+def batch_mode(rag_system):
+    """批量推理模式"""
+    print("\n" + "="*60)
+    print("RAG + LLM 批量推理系统")
+    print("="*60)
+    
+    # 获取输入和输出文件路径
+    input_json_path = input("请输入JSON文件路径: ").strip()
+    if not input_json_path:
+        print("❌ 请输入有效的文件路径")
+        return
+    
+    if not os.path.exists(input_json_path):
+        print(f"❌ 输入文件不存在: {input_json_path}")
+        return
+    
+    output_json_path = input("请输入输出JSON文件路径: ").strip()
+    if not output_json_path:
+        print("❌ 请输入有效的输出文件路径")
+        return
+    
+    print(f"开始批量推理...")
+    print(f"输入文件: {input_json_path}")
+    print(f"输出文件: {output_json_path}")
+    
+    # 执行批量推理
+    rag_system.batch_inference(input_json_path, output_json_path)
+
+
+def main():
+    # 配置参数
+    PDF_FOLDER = "knowledge_base_TCM"  # PDF文件夹路径,需修改此处代码更新结果
+    
+    # 检查环境变量
+    if not os.getenv("DASHSCOPE_API_KEY"):
+        print("请设置环境变量 DASHSCOPE_API_KEY")
+        return
+    
+    print("RAG + LLM 系统配置:")
+    print("- 使用模型: Qwen3-14B")
+    print("- 模型缓存目录: autodl-tmp/qwen")
+    print("- 文本块大小: 500字符")
+    print("- 检索数量: 10个文档")
+    print("- 重排序后保留: 3个文档")
+    print()
+    
+    # 初始化RAG系统
+    rag_system = RAGSystem(
+        chunk_size=500,
+        chunk_overlap=50,
+        top_k=10,
+        rerank_top_k=3
+    )
+    
+    # 构建知识库
+    rag_system.build_knowledge_base(PDF_FOLDER)
+    
+    print("\n" + "="*60)
+    print("RAG + LLM 系统")
+    print("="*60)
+    print("系统已准备就绪！请选择运行模式：")
+    print("1. 交互式推理模式")
+    print("2. 批量推理模式")
+    print("-"*60)
+    
+    while True:
+        try:
+            choice = input("请输入您的选择 (1 或 2): ").strip()
+            
+            if choice == "1":
+                interactive_mode(rag_system)
+                break
+            elif choice == "2":
+                batch_mode(rag_system)
+                break
+            else:
+                print("❌ 无效选择，请输入 1 或 2")
+                continue
+                
+        except KeyboardInterrupt:
+            print("\n\n检测到中断信号，正在退出...")
+            break
+        except Exception as e:
+            print(f"\n❌ 选择过程中出现错误: {e}")
+            print("请重试")
 
 
 if __name__ == "__main__":
