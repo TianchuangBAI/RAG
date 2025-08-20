@@ -234,8 +234,10 @@ def main():
             trust_remote_code=True
         )
         
-        # 构建知识库
-        rag_system.build_knowledge_base(PDF_FOLDER)
+        # 自动检测并加载TCM知识库
+        if not rag_system.auto_detect_knowledge_base():
+            print("❌ TCM知识库初始化失败")
+            return
         
         print("\n" + "="*60)
         print("TCM LoRA微调模型RAG系统")
