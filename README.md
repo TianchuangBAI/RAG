@@ -58,6 +58,7 @@ python train_lora_TCM.py
 python train_lora_MM.py
 ```
 TCM代表启动中医模型微调，MM代表启动西医模型微调。
+输出的checkpoint结果会分别保存在output/qwen3-14B/checkpoint和output/qwen3-14B-en/checkpoint中，用户可以手动选择checkpoint中表现较好的checkpoint保存在output/checkpoint目录下，在本次实验中，我们TCM选取了checkpoint-800，MM选取了checkpoint两个作为后续的RAG使用checkpoint。
 
 ### 3. 知识库准备
 
