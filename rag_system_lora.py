@@ -33,7 +33,8 @@ class LoRARAGSystem:
                  top_k=10,
                  rerank_top_k=3,
                  use_fast=False,
-                 trust_remote_code=True):
+                 trust_remote_code=True,
+                 knowledge_base_type="auto"):
         
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
@@ -41,6 +42,7 @@ class LoRARAGSystem:
         self.rerank_top_k = rerank_top_k
         self.base_model_path = base_model_path
         self.lora_checkpoint_path = lora_checkpoint_path
+        self.knowledge_base_type = knowledge_base_type
         
         # 初始化本地LLM
         print("正在加载LoRA微调模型...")
@@ -87,9 +89,9 @@ class LoRARAGSystem:
         print("正在加载重排序模型...")
         try:
             self.reranker = CrossEncoder("BAAI/bge-reranker-base")
-            print("✅ 重排序模型加载完成")
+            print("✅ ")
         except:
-            print("⚠️ 重排序模型加载失败，将使用余弦相似度作为备选")
+            print("将使用余弦相似度作为排序")
             self.reranker = None
         
         # 向量库相关
@@ -160,9 +162,42 @@ class LoRARAGSystem:
         
         return np.array(embeddings)
     
-    def build_knowledge_base(self, pdf_folder: str, save_path: str = "knowledge_base.pkl"):
+    def build_knowledge_base(self, pdf_folder: str = None, save_path: str = None):
         """构建知识库"""
         print("正在构建知识库...")
+        
+        # 自动确定知识库类型和路径
+        if self.knowledge_base_type == "auto":
+            # 根据checkpoint路径自动检测
+            if "TCM" in self.lora_checkpoint_path:
+                self.knowledge_base_type = "TCM"
+            elif "MM" in self.lora_checkpoint_path:
+                self.knowledge_base_type = "MM"
+            else:
+                print("⚠️ 无法自动检测知识库类型")
+                return False
+        
+        # 根据类型确定默认路径
+        if pdf_folder is None:
+            if self.knowledge_base_type == "TCM":
+                pdf_folder = "knowledge_base_TCM"
+            elif self.knowledge_base_type == "MM":
+                pdf_folder = "knowledge_base_MM"
+            else:
+                print(f"❌ 不支持的知识库类型: {self.knowledge_base_type}")
+                return False
+        
+        if save_path is None:
+            if self.knowledge_base_type == "TCM":
+                save_path = "knowledge_base_TCM.pkl"
+            elif self.knowledge_base_type == "MM":
+                save_path = "knowledge_base_MM.pkl"
+            else:
+                save_path = "knowledge_base.pkl"
+        
+        print(f"🔍 构建 {self.knowledge_base_type} 知识库")
+        print(f"📁 PDF文件夹: {pdf_folder}")
+        print(f"💾 保存路径: {save_path}")
         
         # 检查是否已存在知识库文件
         if os.path.exists(save_path):
@@ -173,7 +208,7 @@ class LoRARAGSystem:
                 self.chunk_embeddings = data['embeddings']
                 self.index = data['index']
             print("✅ 知识库加载完成")
-            return
+            return True
         
         # 读取所有PDF文件
         all_text = ""
@@ -217,6 +252,45 @@ class LoRARAGSystem:
             }, f)
         
         print("✅ 知识库构建完成")
+        return True
+    
+    def load_knowledge_base(self, knowledge_base_path: str = None):
+        """加载预构建的知识库"""
+        # 如果没有指定路径，自动检测
+        if knowledge_base_path is None:
+            if self.knowledge_base_type == "TCM":
+                knowledge_base_path = "knowledge_base_TCM.pkl"
+            elif self.knowledge_base_type == "MM":
+                knowledge_base_path = "knowledge_base_MM.pkl"
+            else:
+                print("❌ 无法确定知识库路径")
+                return False
+        
+        print(f"正在加载知识库: {knowledge_base_path}")
+        
+        if not os.path.exists(knowledge_base_path):
+            print(f"❌ 知识库文件不存在: {knowledge_base_path}")
+            print("系统将自动构建新的知识库")
+            return False
+        
+        try:
+            with open(knowledge_base_path, 'rb') as f:
+                data = pickle.load(f)
+                self.chunks = data['chunks']
+                self.chunk_embeddings = data['embeddings']
+                self.index = data['index']
+            print("✅ 知识库加载完成")
+            return True
+        except Exception as e:
+            print(f"❌ 加载知识库失败: {e}")
+            return False
+    
+    def auto_detect_knowledge_base(self):
+        """自动检测并加载对应的知识库"""
+        print("🔍 自动检测知识库类型...")
+        
+        # 直接调用build_knowledge_base，它会自动处理所有逻辑
+        return self.build_knowledge_base()
     
     def retrieve_relevant_docs(self, query: str) -> List[Dict[str, Any]]:
         """检索相关文档"""
