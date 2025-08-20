@@ -55,7 +55,7 @@ def interactive_mode(rag_system):
                     print(f"  {doc_preview}")
                     print()
             else:
-                print("未找到相关TCM文档")
+                print("未找到相关MM文档")
             
             # 显示生成的答案
             print("\n🤖 LoRA微调模型生成的西医答案:")
@@ -93,7 +93,7 @@ def batch_mode(rag_system):
         return
     
     print("\n" + "="*60)
-    print("TCM LoRA微调模型RAG系统 - 批量处理模式")
+    print("MM LoRA微调模型RAG系统 - 批量处理模式")
     print("="*60)
     print("系统已准备就绪！开始批量处理查询...")
     print("-"*60)
@@ -112,7 +112,7 @@ def batch_mode(rag_system):
     # 批量处理查询
     results = []
     for i, query in enumerate(queries, 1):
-        print(f"🔄 正在处理第 {i}/{len(queries)} 个TCM查询: {query[:50]}{'...' if len(query) > 50 else ''}")
+        print(f"🔄 正在处理第 {i}/{len(queries)} 个MM查询: {query[:50]}{'...' if len(query) > 50 else ''}")
         
         try:
             # 处理查询
@@ -147,7 +147,7 @@ def batch_mode(rag_system):
             results.append(query_result)
     
     print("\n" + "="*60)
-    print("TCM批量处理完成！正在保存结果...")
+    print("MM批量处理完成！正在保存结果...")
     print("-"*60)
     
     # 保存结果到输出文件
@@ -157,7 +157,7 @@ def batch_mode(rag_system):
             f.write("="*80 + "\n\n")
             
             for i, result in enumerate(results, 1):
-                f.write(f"TCM查询 {i}:\n")
+                f.write(f"MM查询 {i}:\n")
                 f.write(f"问题: {result['query']}\n")
                 f.write(f"状态: {'成功' if result['success'] else '失败'}\n")
                 f.write(f"答案: {result['answer']}\n")
@@ -176,7 +176,7 @@ def batch_mode(rag_system):
         
         # 统计结果
         success_count = sum(1 for r in results if r['success'])
-        print(f"📊 TCM处理统计:")
+        print(f"📊 MM处理统计:")
         print(f"   总查询数: {len(results)}")
         print(f"   成功数: {success_count}")
         print(f"   失败数: {len(results) - success_count}")
@@ -213,7 +213,7 @@ def main():
         print("请检查checkpoint路径是否正确")
         return
     
-    print("🚀 TCM LoRA微调模型RAG系统")
+    print("🚀 MM LoRA微调模型RAG系统")
     print("="*50)
     print(f"✅ 基础模型: {BASE_MODEL_PATH}")
     print(f"✅ LoRA checkpoint: {LORA_CHECKPOINT_PATH}")
@@ -222,7 +222,7 @@ def main():
     
     try:
         # 初始化LoRA RAG系统
-        print("正在初始化TCM RAG系统...")
+        print("正在初始化MM RAG系统...")
         rag_system = LoRARAGSystem(
             base_model_path=BASE_MODEL_PATH,
             lora_checkpoint_path=LORA_CHECKPOINT_PATH,
@@ -238,7 +238,7 @@ def main():
         rag_system.build_knowledge_base(PDF_FOLDER)
         
         print("\n" + "="*60)
-        print("TCM LoRA微调模型RAG系统")
+        print("MM LoRA微调模型RAG系统")
         print("="*60)
         print("系统已准备就绪！请选择运行模式：")
         print("1. 交互式问答模式")
@@ -267,7 +267,7 @@ def main():
                 print("请重试")
     
     except Exception as e:
-        print(f"❌ TCM系统初始化失败: {e}")
+        print(f"❌ MM系统初始化失败: {e}")
         print("请检查配置和依赖")
 
 
